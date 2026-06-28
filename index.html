@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SchemeBench — PROTOTYPE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ─── DESIGN TOKENS ──────────────────────────────────────────── */
+  :root {
+    --canvas:    #EFEAE0;
+    --paper:     #F7F4EC;
+    --ink:       #2A2824;
+    --ink-soft:  #57534A;
+    --periwinkle:#6B71BE;
+    --periwinkle-light: #ECEDF7;
+    --hairline:  #D9D2C5;
+    --tan:       #E4D2A6;
+    --rust:      #9E5F4A;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+    --font-body:    'Hanken Grotesk', system-ui, sans-serif;
+  }
+
+  /* ─── RESET & BASE ───────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; }
+  body {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ─── ILLUSTRATIVE BANNER ────────────────────────────────────── */
+  .illustrative-banner {
+    background: #fdf0eb;
+    border-bottom: 1px solid var(--rust);
+    color: var(--rust);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-align: center;
+    padding: 6px 16px;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+  }
+
+  /* ─── HEADER ─────────────────────────────────────────────────── */
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--paper);
+    border-bottom: 1px solid var(--hairline);
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 0;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .proto-pill {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--periwinkle);
+    border: 1px solid var(--periwinkle);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 1;
+    justify-content: center;
+  }
+  .nav-btn {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink-soft);
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0 20px;
+    height: 56px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    letter-spacing: -0.01em;
+    font-weight: 400;
+  }
+  .nav-btn:hover { color: var(--ink); }
+  .nav-btn.active {
+    color: var(--periwinkle);
+    border-bottom-color: var(--periwinkle);
+    font-weight: 500;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+  }
+  .search-input {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--canvas);
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    padding: 6px 12px;
+    width: 240px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input::placeholder { color: var(--ink-soft); opacity: 0.7; }
+  .search-input:focus { border-color: var(--periwinkle); }
+  .review-link {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .review-link:hover { color: var(--periwinkle); }
+
+  /* ─── CONTENT WRAPPER ────────────────────────────────────────── */
+  .tab-content {
+    display: none;
+    padding: 28px 24px 48px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .tab-content.active { display: block; }
+
+  /* ─── SECTION TITLE ──────────────────────────────────────────── */
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .page-subtitle {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     TAB 1 — DEAL EXPLORER
+  ════════════════════════════════════════════════════════════════ */
+  .explorer-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .deal-count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.01em;
+  }
+  .illustrative-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--rust);
+    background: #fdf0eb;
+    border: 1px solid var(--rust);
+    border-radius: 3px;
+    padding: 3px 8px;
+    letter-spacing: 0.02em;
+  }
+
+  /* Deal Table */
+  .deal-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--paper);
+  }
+  .deal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .deal-table thead {
+    background: var(--paper);
+    border-bottom: 1px solid var(--hairline);
+    position: sticky;
+    top: 56px;
+    z-index: 10;
+  }
+  .deal-table th {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 10px 12px;
+    text-align: left;
+    white-space: nowrap;
+    font-weight: 500;
+    border-right: 1px solid var(--hairline);
+  }
+  .deal-table th:last-child { border-right: none; }
+  .deal-table td {
+    padding: 10px 12px;
+    border-right: 1px solid var(--hairline);
+    border-bottom: 1px solid var(--hairline);
+    vertical-align: top;
+  }
+  .deal-table td:last-child { border-right: none; }
+  .deal-table tbody tr:last-child td { border-bottom: none; }
+  .deal-table tbody tr:hover { background: rgba(107,113,190,0.03); }
+
+  /* Target cell */
+  .target-name {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .ticker-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--periwinkle);
+    border: 1px solid var(--periwinkle);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-left: 5px;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+    font-weight: 500;
+  }
+  .sector-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  /* Bidder cell */
+  .bidder-name {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .btype-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-soft);
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-left: 4px;
+    letter-spacing: 0.03em;
+    vertical-align: middle;
+    font-weight: 400;
+  }
+  .origin-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  /* Mono number cells */
+  .mono-val {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .mono-val.sentinel { color: var(--ink-soft); opacity: 0.5; }
+
+  /* Mini band bar */
+  .band-wrap {
+    margin-top: 4px;
+    width: 56px;
+    height: 4px;
+    background: var(--tan);
+    border-radius: 2px;
+    position: relative;
+    overflow: visible;
+  }
+  .band-fill {
+    height: 100%;
+    border-radius: 2px;
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+  .band-marker {
+    width: 2px;
+    height: 8px;
+    background: var(--periwinkle);
+    position: absolute;
+    top: -2px;
+    border-radius: 1px;
+  }
+
+  /* Condition chips */
+  .cond-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--periwinkle);
+    border: 1px solid var(--periwinkle);
+    border-radius: 3px;
+    padding: 2px 5px;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .chip.rust {
+    color: var(--rust);
+    border-color: var(--rust);
+  }
+  .chip.muted {
+    color: var(--ink-soft);
+    border-color: var(--hairline);
+  }
+
+  /* Status dot */
+  .status-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.completed  { background: var(--periwinkle); }
+  .status-dot.pending    { background: var(--ink-soft); }
+  .status-dot.lapsed     { background: var(--rust); }
+  .status-dot.terminated { background: var(--rust); }
+  .status-dot.withdrawn  { background: var(--rust); opacity: 0.7; }
+  .status-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     TAB 2 — TRENDS
+  ════════════════════════════════════════════════════════════════ */
+  .ask-trend-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--periwinkle);
+    border-radius: 6px;
+    background: var(--paper);
+    padding: 12px 16px;
+    margin-top: 16px;
+    margin-bottom: 24px;
+  }
+  .ask-trend-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--periwinkle);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .ask-trend-input {
+    flex: 1;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--canvas);
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    padding: 7px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .ask-trend-input::placeholder { color: var(--ink-soft); opacity: 0.6; }
+  .ask-trend-input:focus { border-color: var(--periwinkle); }
+  .ask-btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--paper);
+    background: var(--periwinkle);
+    border: none;
+    border-radius: 4px;
+    padding: 7px 16px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    transition: opacity 0.15s;
+  }
+  .ask-btn:hover { opacity: 0.85; }
+
+  .trends-section-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 500;
+    margin-bottom: 12px;
+    margin-top: 20px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .trends-section-label:first-child { margin-top: 0; }
+
+  .trends-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+
+  .trend-tile {
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 18px 18px 14px;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+  }
+  .tile-title {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+  .tile-chart {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+  .tile-caption {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+  .tile-drill-hint {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--periwinkle);
+    margin-top: 6px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     TAB 3 — MARKET NORMS
+  ════════════════════════════════════════════════════════════════ */
+  .norms-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    align-items: start;
+    margin-top: 20px;
+  }
+
+  /* Test Your Terms */
+  .tyt-card {
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 18px;
+  }
+  .tyt-header {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 500;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .tyt-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .tyt-label {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink-soft);
+    flex: 1;
+    line-height: 1.3;
+  }
+  .tyt-input-wrap {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--canvas);
+    width: 80px;
+  }
+  .tyt-input {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink);
+    background: none;
+    border: none;
+    outline: none;
+    padding: 5px 6px;
+    width: 50px;
+    text-align: right;
+  }
+  .tyt-suffix {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+    padding-right: 7px;
+  }
+  .tyt-optional {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-soft);
+    opacity: 0.6;
+    letter-spacing: 0.04em;
+    display: block;
+    margin-top: 1px;
+  }
+  .calc-btn {
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--paper);
+    background: var(--periwinkle);
+    border: none;
+    border-radius: 4px;
+    padding: 8px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-top: 6px;
+    text-transform: uppercase;
+    transition: opacity 0.15s;
+  }
+  .calc-btn:hover { opacity: 0.85; }
+
+  /* Norms Main Card */
+  .norms-card {
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .norms-card-header {
+    padding: 18px 20px 16px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .norms-kicker {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--rust);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .norms-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .norms-subline {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+  }
+  .norms-body { padding: 0 20px 20px; }
+
+  /* Norm rows */
+  .norm-section-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    padding: 14px 0 8px;
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: 10px;
+  }
+  .norm-row {
+    display: grid;
+    grid-template-columns: 1fr 72px 72px 72px 100px;
+    gap: 0;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(217,210,197,0.4);
+  }
+  .norm-row:last-child { border-bottom: none; }
+  .norm-label {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink);
+    padding-right: 12px;
+    line-height: 1.3;
+  }
+  .norm-n {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    display: block;
+    margin-top: 2px;
+  }
+  .norm-pct {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    text-align: center;
+    font-weight: 500;
+  }
+  .norm-pct.p25 { color: var(--ink-soft); font-size: 11px; font-weight: 400; }
+  .norm-pct.p75 { color: var(--ink-soft); font-size: 11px; font-weight: 400; }
+  .norm-bar-wrap {
+    padding-left: 8px;
+  }
+
+  /* The distribution bar */
+  .dist-bar {
+    height: 6px;
+    background: var(--tan);
+    border-radius: 3px;
+    position: relative;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+  .dist-range {
+    position: absolute;
+    height: 100%;
+    background: var(--periwinkle);
+    opacity: 0.3;
+    border-radius: 3px;
+  }
+  .dist-median {
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    background: var(--periwinkle);
+    top: -2px;
+    border-radius: 1px;
+  }
+  .dist-user {
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    background: var(--rust);
+    top: -2px;
+    border-radius: 1px;
+    display: none;
+  }
+  .dist-annotation {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+
+  /* Stat grid */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--hairline);
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+  .stat-cell {
+    background: var(--paper);
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .stat-cell:hover { background: var(--periwinkle-light); }
+  .stat-cell-label {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .stat-cell-val {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--ink);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  /* Mix bars */
+  .mix-section { margin: 16px 0; }
+  .mix-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .mix-bar-row {
+    display: flex;
+    height: 20px;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .mix-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--paper);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: opacity 0.12s;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 0 4px;
+  }
+  .mix-seg:hover { opacity: 0.85; cursor: pointer; }
+  .mix-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .mix-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-soft);
+  }
+  .mix-swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Methodology footnote */
+  .methodology-note {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--hairline);
+  }
+
+  /* Notable callouts */
+  .callouts-section { margin-top: 20px; }
+  .callouts-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .callouts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .callout-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid;
+    letter-spacing: 0.02em;
+  }
+  .callout-chip.rust-chip {
+    color: var(--rust);
+    border-color: var(--rust);
+    background: #fdf0eb;
+  }
+  .callout-chip.peri-chip {
+    color: var(--periwinkle);
+    border-color: var(--periwinkle);
+    background: var(--periwinkle-light);
+  }
+  .callout-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* Norms page header */
+  .norms-page-header { margin-bottom: 4px; }
+  .norms-exclusion-note {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    margin-top: 3px;
+  }
+  .norms-exclusion-note .n-count { color: var(--ink-soft); }
+  .norms-exclusion-note .n-excluded { color: var(--rust); }
+
+  /* Column header tooltips */
+  .th-inner {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Table col alignment */
+  .col-right { text-align: right; }
+  .col-center { text-align: center; }
+
+  /* Responsive tweaks */
+  @media (max-width: 900px) {
+    .norms-layout { grid-template-columns: 1fr; }
+    .trends-grid { grid-template-columns: 1fr; }
+    .app-header { padding: 0 12px; }
+    .search-input { width: 160px; }
+    .header-nav { gap: 0; }
+    .nav-btn { padding: 0 12px; }
+  }
+
+  /* Trend header row (col labels) */
+  .norm-col-headers {
+    display: grid;
+    grid-template-columns: 1fr 72px 72px 72px 100px;
+    gap: 0;
+    padding: 0 0 6px;
+  }
+  .norm-col-hdr {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-align: center;
+    opacity: 0.7;
+  }
+  .norm-col-hdr:first-child { text-align: left; }
+  .norm-col-hdr:last-child { text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ─── ILLUSTRATIVE BANNER ──────────────────────────────────── -->
+<div class="illustrative-banner">
+  [i] &nbsp;Illustrative data — not for reliance &nbsp;·&nbsp; SchemeBench PROTOTYPE &nbsp;·&nbsp; Data as of 28 Jun 2026
+</div>
+
+<!-- ─── APP HEADER ────────────────────────────────────────────── -->
+<header class="app-header">
+  <div class="header-left">
+    <span class="wordmark">SchemeBench</span>
+    <span class="proto-pill">Prototype</span>
+  </div>
+  <nav class="header-nav">
+    <button class="nav-btn active" onclick="switchTab('explorer', this)">Deal Explorer</button>
+    <button class="nav-btn" onclick="switchTab('trends', this)">Trends</button>
+    <button class="nav-btn" onclick="switchTab('norms', this)">Market Norms</button>
+  </nav>
+  <div class="header-right">
+    <input class="search-input" type="search" placeholder="Search target, bidder, sector…">
+    <a href="#" class="review-link">Review</a>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════════════════════
+     TAB 1: DEAL EXPLORER
+════════════════════════════════════════════════════════════════ -->
+<main class="tab-content active" id="tab-explorer">
+  <div class="explorer-header">
+    <span class="deal-count">37 of 41 schemes &nbsp;·&nbsp; ≥ A$1bn</span>
+    <span class="illustrative-note">[i] Illustrative data — not for reliance</span>
+  </div>
+
+  <div class="deal-table-wrap">
+    <table class="deal-table">
+      <thead>
+        <tr>
+          <th><span class="th-inner">Target</span></th>
+          <th><span class="th-inner">Bidder</span></th>
+          <th><span class="th-inner">Announced</span></th>
+          <th style="text-align:right"><span class="th-inner">Equity Value</span></th>
+          <th style="text-align:right"><span class="th-inner">Premium</span></th>
+          <th style="text-align:right"><span class="th-inner">Break Fee</span></th>
+          <th class="col-center"><span class="th-inner">Match</span></th>
+          <th><span class="th-inner">Conditions</span></th>
+          <th><span class="th-inner">Status</span></th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- Origin Energy -->
+        <tr>
+          <td>
+            <div class="target-name">Origin Energy <span class="ticker-badge">ORG</span></div>
+            <div class="sector-label">Energy</div>
+          </td>
+          <td>
+            <div class="bidder-name">Brookfield Asset Management <span class="btype-badge">SPONSOR</span></div>
+            <div class="origin-label">CA</div>
+          </td>
+          <td><span class="mono-val">Nov 2022</span></td>
+          <td style="text-align:right"><span class="mono-val">$15.2bn</span></td>
+          <td style="text-align:right">
+            <span class="mono-val">54.5%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:100%; background:var(--tan);"></div>
+              <div class="band-marker" style="left:calc(54.5/70 * 56px);"></div>
+            </div>
+          </td>
+          <td style="text-align:right">
+            <span class="mono-val">0.25%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:25%; background:var(--periwinkle); opacity:0.4;"></div>
+              <div class="band-marker" style="left:calc(0.25/1.2 * 56px);"></div>
+            </div>
+          </td>
+          <td class="col-center"><span class="mono-val">Yes</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip">FIRB</span>
+              <span class="chip">ACCC</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot lapsed"></span>
+              <span class="status-label">Lapsed</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Newcrest Mining -->
+        <tr>
+          <td>
+            <div class="target-name">Newcrest Mining <span class="ticker-badge">NCM</span></div>
+            <div class="sector-label">Mining</div>
+          </td>
+          <td>
+            <div class="bidder-name">Newmont Corporation <span class="btype-badge">TRADE</span></div>
+            <div class="origin-label">US</div>
+          </td>
+          <td><span class="mono-val">Feb 2023</span></td>
+          <td style="text-align:right"><span class="mono-val">$26.2bn</span></td>
+          <td style="text-align:right">
+            <span class="mono-val">31.6%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:100%; background:var(--tan);"></div>
+              <div class="band-marker" style="left:calc(31.6/70 * 56px);"></div>
+            </div>
+          </td>
+          <td style="text-align:right">
+            <span class="mono-val">1.00%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:83%; background:var(--periwinkle); opacity:0.4;"></div>
+              <div class="band-marker" style="left:calc(1.0/1.2 * 56px);"></div>
+            </div>
+          </td>
+          <td class="col-center"><span class="mono-val">Yes</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip">FIRB</span>
+              <span class="chip">ACCC</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot completed"></span>
+              <span class="status-label">Completed</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Crown Resorts -->
+        <tr>
+          <td>
+            <div class="target-name">Crown Resorts <span class="ticker-badge">CWN</span></div>
+            <div class="sector-label">Gaming</div>
+          </td>
+          <td>
+            <div class="bidder-name">Blackstone <span class="btype-badge">SPONSOR</span></div>
+            <div class="origin-label">US</div>
+          </td>
+          <td><span class="mono-val">Mar 2022</span></td>
+          <td style="text-align:right"><span class="mono-val">$8.9bn</span></td>
+          <td style="text-align:right">
+            <span class="mono-val">28.7%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:100%; background:var(--tan);"></div>
+              <div class="band-marker" style="left:calc(28.7/70 * 56px);"></div>
+            </div>
+          </td>
+          <td style="text-align:right">
+            <span class="mono-val">0.50%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:42%; background:var(--periwinkle); opacity:0.4;"></div>
+              <div class="band-marker" style="left:calc(0.5/1.2 * 56px);"></div>
+            </div>
+          </td>
+          <td class="col-center"><span class="mono-val">Yes</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip">FIRB</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot completed"></span>
+              <span class="status-label">Completed</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- OZ Minerals -->
+        <tr>
+          <td>
+            <div class="target-name">OZ Minerals <span class="ticker-badge">OZL</span></div>
+            <div class="sector-label">Mining</div>
+          </td>
+          <td>
+            <div class="bidder-name">BHP Group <span class="btype-badge">TRADE</span></div>
+            <div class="origin-label">AU</div>
+          </td>
+          <td><span class="mono-val">Nov 2022</span></td>
+          <td style="text-align:right"><span class="mono-val">$9.6bn</span></td>
+          <td style="text-align:right">
+            <span class="mono-val">49.2%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:100%; background:var(--tan);"></div>
+              <div class="band-marker" style="left:calc(49.2/70 * 56px);"></div>
+            </div>
+          </td>
+          <td style="text-align:right">
+            <span class="mono-val">1.00%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:83%; background:var(--periwinkle); opacity:0.4;"></div>
+              <div class="band-marker" style="left:calc(1.0/1.2 * 56px);"></div>
+            </div>
+          </td>
+          <td class="col-center"><span class="mono-val">Yes</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip">FIRB</span>
+              <span class="chip">ACCC</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot completed"></span>
+              <span class="status-label">Completed</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Adbri -->
+        <tr>
+          <td>
+            <div class="target-name">Adbri <span class="ticker-badge">ABC</span></div>
+            <div class="sector-label">Materials</div>
+          </td>
+          <td>
+            <div class="bidder-name">CRH plc <span class="btype-badge">TRADE</span></div>
+            <div class="origin-label">IE</div>
+          </td>
+          <td><span class="mono-val">Jun 2023</span></td>
+          <td style="text-align:right"><span class="mono-val">$2.1bn</span></td>
+          <td style="text-align:right">
+            <span class="mono-val">46.4%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:100%; background:var(--tan);"></div>
+              <div class="band-marker" style="left:calc(46.4/70 * 56px);"></div>
+            </div>
+          </td>
+          <td style="text-align:right">
+            <span class="mono-val">1.00%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:83%; background:var(--periwinkle); opacity:0.4;"></div>
+              <div class="band-marker" style="left:calc(1.0/1.2 * 56px);"></div>
+            </div>
+          </td>
+          <td class="col-center"><span class="mono-val">Yes</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip">FIRB</span>
+              <span class="chip">ACCC</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot completed"></span>
+              <span class="status-label">Completed</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Alumina -->
+        <tr>
+          <td>
+            <div class="target-name">Alumina <span class="ticker-badge">AWC</span></div>
+            <div class="sector-label">Mining</div>
+          </td>
+          <td>
+            <div class="bidder-name">Alcoa Corporation <span class="btype-badge">MERGER</span></div>
+            <div class="origin-label">US</div>
+          </td>
+          <td><span class="mono-val">Mar 2024</span></td>
+          <td style="text-align:right"><span class="mono-val">$3.3bn</span></td>
+          <td style="text-align:right">
+            <span class="mono-val">13.1%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:100%; background:var(--tan);"></div>
+              <div class="band-marker" style="left:calc(13.1/70 * 56px);"></div>
+            </div>
+          </td>
+          <td style="text-align:right">
+            <span class="mono-val sentinel">—</span>
+          </td>
+          <td class="col-center"><span class="mono-val">No</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip">FIRB</span>
+              <span class="chip">ACCC</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot completed"></span>
+              <span class="status-label">Completed</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- InvoCare -->
+        <tr>
+          <td>
+            <div class="target-name">InvoCare <span class="ticker-badge">IVC</span></div>
+            <div class="sector-label">Services</div>
+          </td>
+          <td>
+            <div class="bidder-name">TPG Capital <span class="btype-badge">SPONSOR</span></div>
+            <div class="origin-label">US</div>
+          </td>
+          <td><span class="mono-val">Aug 2022</span></td>
+          <td style="text-align:right"><span class="mono-val">$1.9bn</span></td>
+          <td style="text-align:right">
+            <span class="mono-val">30.8%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:100%; background:var(--tan);"></div>
+              <div class="band-marker" style="left:calc(30.8/70 * 56px);"></div>
+            </div>
+          </td>
+          <td style="text-align:right">
+            <span class="mono-val">1.00%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:83%; background:var(--periwinkle); opacity:0.4;"></div>
+              <div class="band-marker" style="left:calc(1.0/1.2 * 56px);"></div>
+            </div>
+          </td>
+          <td class="col-center"><span class="mono-val">Yes</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip">FIRB</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot completed"></span>
+              <span class="status-label">Completed</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- ANZ Banking Group -->
+        <tr>
+          <td>
+            <div class="target-name">ANZ Banking Group <span class="ticker-badge">ANZ</span></div>
+            <div class="sector-label">Banking</div>
+          </td>
+          <td>
+            <div class="bidder-name"><span class="mono-val sentinel">—</span></div>
+            <div class="origin-label">&nbsp;</div>
+          </td>
+          <td><span class="mono-val">Apr 2022</span></td>
+          <td style="text-align:right"><span class="mono-val sentinel">—</span></td>
+          <td style="text-align:right"><span class="mono-val sentinel">—</span></td>
+          <td style="text-align:right"><span class="mono-val sentinel">—</span></td>
+          <td class="col-center"><span class="mono-val sentinel">—</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip">ACCC</span>
+              <span class="chip">APRA</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot withdrawn"></span>
+              <span class="status-label">Withdrawn</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Uniti Group -->
+        <tr>
+          <td>
+            <div class="target-name">Uniti Group <span class="ticker-badge">UWL</span></div>
+            <div class="sector-label">Infrastructure</div>
+          </td>
+          <td>
+            <div class="bidder-name">Macquarie/Morrison <span class="btype-badge">CONSORTIUM</span></div>
+            <div class="origin-label">AU</div>
+          </td>
+          <td><span class="mono-val">Feb 2022</span></td>
+          <td style="text-align:right"><span class="mono-val">$4.5bn</span></td>
+          <td style="text-align:right">
+            <span class="mono-val">31.8%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:100%; background:var(--tan);"></div>
+              <div class="band-marker" style="left:calc(31.8/70 * 56px);"></div>
+            </div>
+          </td>
+          <td style="text-align:right">
+            <span class="mono-val">1.00%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:83%; background:var(--periwinkle); opacity:0.4;"></div>
+              <div class="band-marker" style="left:calc(1.0/1.2 * 56px);"></div>
+            </div>
+          </td>
+          <td class="col-center"><span class="mono-val">Yes</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip">FIRB</span>
+              <span class="chip">ACCC</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot completed"></span>
+              <span class="status-label">Completed</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Boral -->
+        <tr>
+          <td>
+            <div class="target-name">Boral <span class="ticker-badge">BLD</span></div>
+            <div class="sector-label">Materials</div>
+          </td>
+          <td>
+            <div class="bidder-name">Seven Group Holdings <span class="btype-badge">TRADE</span></div>
+            <div class="origin-label">AU</div>
+          </td>
+          <td><span class="mono-val">Aug 2021</span></td>
+          <td style="text-align:right"><span class="mono-val">$8.3bn</span></td>
+          <td style="text-align:right">
+            <span class="mono-val">12.5%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:100%; background:var(--tan);"></div>
+              <div class="band-marker" style="left:calc(12.5/70 * 56px);"></div>
+            </div>
+          </td>
+          <td style="text-align:right">
+            <span class="mono-val">1.00%</span>
+            <div class="band-wrap">
+              <div class="band-fill" style="width:83%; background:var(--periwinkle); opacity:0.4;"></div>
+              <div class="band-marker" style="left:calc(1.0/1.2 * 56px);"></div>
+            </div>
+          </td>
+          <td class="col-center"><span class="mono-val">Yes</span></td>
+          <td>
+            <div class="cond-chips">
+              <span class="chip muted">—</span>
+            </div>
+          </td>
+          <td>
+            <div class="status-cell">
+              <span class="status-dot completed"></span>
+              <span class="status-label">Completed</span>
+            </div>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- ════════════════════════════════════════════════════════════════
+     TAB 2: TRENDS
+════════════════════════════════════════════════════════════════ -->
+<main class="tab-content" id="tab-trends">
+  <div class="page-title">Trends</div>
+  <div class="page-subtitle">37 headline schemes · ≥ A$1bn · Nov 2021 – Feb 2026 · 4 comparables excluded</div>
+
+  <div class="ask-trend-box">
+    <span class="ask-trend-label">Ask a trend</span>
+    <input class="ask-trend-input" type="text" placeholder="e.g. What % of deals had a ticking fee?">
+    <button class="ask-btn">Ask</button>
+  </div>
+
+  <!-- SECTION: Fees & Protection -->
+  <div class="trends-section-label">Fees &amp; Protection</div>
+
+  <div class="trends-grid">
+
+    <!-- Tile 1: Break fee % -->
+    <div class="trend-tile">
+      <div class="tile-title">Break fee, % of equity value</div>
+      <div class="tile-chart">
+        <svg viewBox="0 0 340 160" width="100%" height="160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Grid hairlines -->
+          <line x1="40" y1="20" x2="320" y2="20" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="60" x2="320" y2="60" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="100" x2="320" y2="100" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="140" x2="320" y2="140" stroke="#D9D2C5" stroke-width="0.5"/>
+          <!-- Y-axis labels -->
+          <text x="34" y="23" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">1.2%</text>
+          <text x="34" y="63" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">1.0%</text>
+          <text x="34" y="103" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">0.8%</text>
+          <text x="34" y="143" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">0.5%</text>
+          <!-- Band: min-max (periwinkle wash) -->
+          <!-- 2022: median 1.00 (y=60), min 0.25 (y~130), max 1.00 (y=60) -->
+          <!-- Year positions: 2022=80, 2023=147, 2024=213, 2025=280 -->
+          <!-- Band polygon -->
+          <polygon
+            points="80,60 147,40 213,55 280,40  280,80 213,85 147,80 80,130"
+            fill="#6B71BE" fill-opacity="0.13" stroke="none"/>
+          <!-- Median line -->
+          <polyline
+            points="80,60 147,60 213,65 280,60"
+            fill="none" stroke="#6B71BE" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <!-- Year dots -->
+          <circle cx="80" cy="60" r="3.5" fill="#6B71BE"/>
+          <circle cx="147" cy="60" r="3.5" fill="#6B71BE"/>
+          <circle cx="213" cy="65" r="3.5" fill="#6B71BE"/>
+          <circle cx="280" cy="60" r="3.5" fill="#6B71BE"/>
+          <!-- X-axis labels -->
+          <text x="80" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2022</text>
+          <text x="147" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2023</text>
+          <text x="213" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2024</text>
+          <text x="280" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2025</text>
+          <!-- Value labels on dots -->
+          <text x="80" y="53" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">1.00%</text>
+          <text x="147" y="53" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">1.00%</text>
+          <text x="213" y="58" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">0.98%</text>
+          <text x="280" y="53" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">1.00%</text>
+        </svg>
+      </div>
+      <div class="tile-caption">Median break fee by announcement year. Most sit at or near the 1% GN7 ceiling.</div>
+      <div class="tile-drill-hint">Click a year to list its deals.</div>
+    </div>
+
+    <!-- Tile 2: Reverse break fee -->
+    <div class="trend-tile">
+      <div class="tile-title">Reverse break fee, % of equity value</div>
+      <div class="tile-chart">
+        <svg viewBox="0 0 340 160" width="100%" height="160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Grid hairlines -->
+          <line x1="40" y1="20" x2="320" y2="20" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="55" x2="320" y2="55" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="95" x2="320" y2="95" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="135" x2="320" y2="135" stroke="#D9D2C5" stroke-width="0.5"/>
+          <!-- Y labels: 3.0%, 2.5%, 2.0%, 1.0% -->
+          <text x="34" y="23" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">3.0%</text>
+          <text x="34" y="58" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">2.5%</text>
+          <text x="34" y="98" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">2.0%</text>
+          <text x="34" y="138" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">1.0%</text>
+          <!-- Scale: 1.0% = y=135, 3.0% = y=20; range 2% over 115px → 57.5px per % -->
+          <!-- 1.5% → 135-(0.5*57.5)=106.25; 1.8% → 135-(0.8*57.5)=89; 2.0% → 95; 2.5% → 58; 1.6% → 135-(0.6*57.5)=100.5 -->
+          <!-- Band polygon min/max -->
+          <polygon
+            points="80,120 147,95 213,70 280,100   280,135 213,95 147,120 80,135"
+            fill="#6B71BE" fill-opacity="0.13" stroke="none"/>
+          <!-- Median line: 2022=1.5→y106, 2023=1.8→y89, 2024=2.0→y95, 2025=1.6→y101 -->
+          <polyline
+            points="80,106 147,89 213,95 280,100"
+            fill="none" stroke="#6B71BE" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="80" cy="106" r="3.5" fill="#6B71BE"/>
+          <circle cx="147" cy="89" r="3.5" fill="#6B71BE"/>
+          <circle cx="213" cy="95" r="3.5" fill="#6B71BE"/>
+          <circle cx="280" cy="100" r="3.5" fill="#6B71BE"/>
+          <text x="80" y="99" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">1.5%</text>
+          <text x="147" y="82" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">1.8%</text>
+          <text x="213" y="88" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">2.0%</text>
+          <text x="280" y="93" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">1.6%</text>
+          <text x="80" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2022</text>
+          <text x="147" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2023</text>
+          <text x="213" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2024</text>
+          <text x="280" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2025</text>
+        </svg>
+      </div>
+      <div class="tile-caption">Median reverse break fee by year, where one is disclosed.</div>
+      <div class="tile-drill-hint">Click a year to list its deals.</div>
+    </div>
+
+    <!-- Tile 3: Premium 1-day -->
+    <div class="trend-tile">
+      <div class="tile-title">Premium to undisturbed (1-day)</div>
+      <div class="tile-chart">
+        <svg viewBox="0 0 340 160" width="100%" height="160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Grid -->
+          <line x1="40" y1="15" x2="320" y2="15" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="55" x2="320" y2="55" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="95" x2="320" y2="95" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="135" x2="320" y2="135" stroke="#D9D2C5" stroke-width="0.5"/>
+          <!-- Y: 70%, 50%, 30%, 10% — range 60 pts over 120px → 2px per pt -->
+          <text x="34" y="18" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">70%</text>
+          <text x="34" y="58" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">50%</text>
+          <text x="34" y="98" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">30%</text>
+          <text x="34" y="138" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">10%</text>
+          <!-- Scale: 10%=135, 70%=15; 60pts → 120px; 2px per pt -->
+          <!-- 35%→y=135-(25*2)=85; 32%→y=135-(22*2)=91; 28%→y=135-(18*2)=99; 31%→y=135-(21*2)=93 -->
+          <polygon
+            points="80,50 147,60 213,65 280,60   280,115 213,125 147,115 80,105"
+            fill="#6B71BE" fill-opacity="0.13" stroke="none"/>
+          <polyline
+            points="80,85 147,91 213,99 280,93"
+            fill="none" stroke="#6B71BE" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="80" cy="85" r="3.5" fill="#6B71BE"/>
+          <circle cx="147" cy="91" r="3.5" fill="#6B71BE"/>
+          <circle cx="213" cy="99" r="3.5" fill="#6B71BE"/>
+          <circle cx="280" cy="93" r="3.5" fill="#6B71BE"/>
+          <text x="80" y="78" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">35%</text>
+          <text x="147" y="84" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">32%</text>
+          <text x="213" y="92" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">28%</text>
+          <text x="280" y="86" font-family="IBM Plex Mono" font-size="8" fill="#6B71BE" text-anchor="middle">31%</text>
+          <text x="80" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2022</text>
+          <text x="147" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2023</text>
+          <text x="213" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2024</text>
+          <text x="280" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2025</text>
+        </svg>
+      </div>
+      <div class="tile-caption">Median control premium over the undisturbed closing price.</div>
+      <div class="tile-drill-hint">Click a year to list its deals.</div>
+    </div>
+
+    <!-- Tile 4: Total deal value by year -->
+    <div class="trend-tile">
+      <div class="tile-title">Total deal value by year (A$bn)</div>
+      <div class="tile-chart">
+        <svg viewBox="0 0 340 160" width="100%" height="160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Grid -->
+          <line x1="40" y1="20" x2="320" y2="20" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="60" x2="320" y2="60" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="100" x2="320" y2="100" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="140" x2="320" y2="140" stroke="#D9D2C5" stroke-width="0.5"/>
+          <text x="34" y="23" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">$50bn</text>
+          <text x="34" y="63" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">$35bn</text>
+          <text x="34" y="103" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">$20bn</text>
+          <text x="34" y="143" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">$5bn</text>
+          <!-- Scale: 5bn=140, 50bn=20; 45bn → 120px → 2.67px per bn -->
+          <!-- 42→y=140-(37*2.67)=140-98.8=41.2; 38→y=140-(33*2.67)=51.8; 22→y=140-(17*2.67)=94.6; 18→y=140-(13*2.67)=105.3 -->
+          <!-- Bars width ~40px, spaced at 80/147/213/280 -->
+          <rect x="58" y="41" width="44" height="99" fill="#E4D2A6" rx="2"/>
+          <rect x="125" y="52" width="44" height="88" fill="#E4D2A6" rx="2"/>
+          <rect x="191" y="95" width="44" height="45" fill="#6B71BE" rx="2" opacity="0.35"/>
+          <rect x="258" y="105" width="44" height="35" fill="#6B71BE" rx="2" opacity="0.35"/>
+          <!-- Value labels -->
+          <text x="80" y="36" font-family="IBM Plex Mono" font-size="9" fill="#2A2824" text-anchor="middle">$42bn</text>
+          <text x="147" y="47" font-family="IBM Plex Mono" font-size="9" fill="#2A2824" text-anchor="middle">$38bn</text>
+          <text x="213" y="90" font-family="IBM Plex Mono" font-size="9" fill="#2A2824" text-anchor="middle">$22bn</text>
+          <text x="280" y="100" font-family="IBM Plex Mono" font-size="9" fill="#2A2824" text-anchor="middle">$18bn</text>
+          <!-- X labels -->
+          <text x="80" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2022</text>
+          <text x="147" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2023</text>
+          <text x="213" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2024</text>
+          <text x="280" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2025</text>
+        </svg>
+      </div>
+      <div class="tile-caption">Total announced scheme equity value by year. Deal flow softened post-2023.</div>
+      <div class="tile-drill-hint">Click a bar to list that year's deals.</div>
+    </div>
+
+  </div>
+
+  <!-- SECTION: Deal Market -->
+  <div class="trends-section-label" style="margin-top:28px">Deal Market</div>
+  <div class="trends-grid">
+
+    <!-- Tile 5: Sector mix -->
+    <div class="trend-tile">
+      <div class="tile-title">Sector mix</div>
+      <div class="tile-chart" style="flex-direction:column; align-items:stretch; justify-content:center; gap:6px;">
+        <!-- Horizontal stacked bar -->
+        <div style="display:flex; height:28px; border-radius:3px; overflow:hidden; margin-bottom:10px;">
+          <div style="width:35%; background:#6B71BE; opacity:0.7; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#F7F4EC; font-weight:600;">Mining 35%</div>
+          <div style="width:18%; background:#9E5F4A; opacity:0.5; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#F7F4EC; font-weight:600;">18%</div>
+          <div style="width:14%; background:#E4D2A6; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#57534A; font-weight:600;">14%</div>
+          <div style="width:12%; background:#D9D2C5; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#57534A; font-weight:600;">12%</div>
+          <div style="width:8%; background:#ECEDF7; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#6B71BE; font-weight:600;">8%</div>
+          <div style="width:13%; background:#F7F4EC; border:1px solid #D9D2C5; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#57534A; font-weight:600;">13%</div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#6B71BE;opacity:0.7;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Mining</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#9E5F4A;opacity:0.5;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Energy</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#E4D2A6;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Materials</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#D9D2C5;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Infrastructure</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#ECEDF7;border:1px solid #6B71BE;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Healthcare</span></div>
+          <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#F7F4EC;border:1px solid #D9D2C5;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Other</span></div>
+        </div>
+      </div>
+      <div class="tile-caption">Sector distribution of headline scheme deals. Mining and energy dominate.</div>
+      <div class="tile-drill-hint">Click a segment to list deals in that sector.</div>
+    </div>
+
+    <!-- Tile 6: Bidder type stacked bar -->
+    <div class="trend-tile">
+      <div class="tile-title">Bidder type by year</div>
+      <div class="tile-chart">
+        <svg viewBox="0 0 340 160" width="100%" height="160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Grid -->
+          <line x1="40" y1="20" x2="320" y2="20" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="60" x2="320" y2="60" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="100" x2="320" y2="100" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="140" x2="320" y2="140" stroke="#D9D2C5" stroke-width="0.5"/>
+          <text x="34" y="23" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">100%</text>
+          <text x="34" y="63" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">75%</text>
+          <text x="34" y="103" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">50%</text>
+          <text x="34" y="143" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">25%</text>
+          <!-- Stacked bars 100%: Trade/Sponsor/Consortium/Merger; bar height 120px total (20→140) -->
+          <!-- 2022: Trade 60%, Sponsor 25%, Consortium 10%, Merger 5% -->
+          <!-- 2022 bar at x=58, w=44 -->
+          <rect x="58" y="20" width="44" height="72" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="58" y="92" width="44" height="30" fill="#E4D2A6" rx="0"/>
+          <rect x="58" y="122" width="44" height="12" fill="#9E5F4A" opacity="0.4" rx="0"/>
+          <rect x="58" y="134" width="44" height="6" fill="#D9D2C5" rx="0 0 2 2"/>
+          <!-- 2023: Trade 55%, Sponsor 30%, Consortium 8%, Merger 7% -->
+          <rect x="125" y="20" width="44" height="66" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="125" y="86" width="44" height="36" fill="#E4D2A6" rx="0"/>
+          <rect x="125" y="122" width="44" height="10" fill="#9E5F4A" opacity="0.4" rx="0"/>
+          <rect x="125" y="132" width="44" height="8" fill="#D9D2C5" rx="0 0 2 2"/>
+          <!-- 2024: Trade 50%, Sponsor 35%, Consortium 5%, Merger 10% -->
+          <rect x="191" y="20" width="44" height="60" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="191" y="80" width="44" height="42" fill="#E4D2A6" rx="0"/>
+          <rect x="191" y="122" width="44" height="6" fill="#9E5F4A" opacity="0.4" rx="0"/>
+          <rect x="191" y="128" width="44" height="12" fill="#D9D2C5" rx="0 0 2 2"/>
+          <!-- 2025: Trade 65%, Sponsor 20%, Consortium 5%, Merger 10% -->
+          <rect x="258" y="20" width="44" height="78" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="258" y="98" width="44" height="24" fill="#E4D2A6" rx="0"/>
+          <rect x="258" y="122" width="44" height="6" fill="#9E5F4A" opacity="0.4" rx="0"/>
+          <rect x="258" y="128" width="44" height="12" fill="#D9D2C5" rx="0 0 2 2"/>
+          <!-- X labels -->
+          <text x="80" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2022</text>
+          <text x="147" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2023</text>
+          <text x="213" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2024</text>
+          <text x="280" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2025</text>
+        </svg>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#6B71BE;opacity:0.65;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Trade</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#E4D2A6;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Sponsor</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#9E5F4A;opacity:0.4;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Consortium</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#D9D2C5;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Merger</span></div>
+      </div>
+      <div class="tile-caption">Breakdown by acquirer type. Trade buyers dominate across all years.</div>
+      <div class="tile-drill-hint">Click a segment to list its deals.</div>
+    </div>
+
+  </div>
+
+  <!-- SECTION: Structure -->
+  <div class="trends-section-label" style="margin-top:28px">Structure</div>
+  <div class="trends-grid">
+
+    <!-- Tile 7: IER conclusion -->
+    <div class="trend-tile">
+      <div class="tile-title">IER conclusion by year</div>
+      <div class="tile-chart">
+        <svg viewBox="0 0 340 160" width="100%" height="160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="40" y1="20" x2="320" y2="20" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="60" x2="320" y2="60" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="100" x2="320" y2="100" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="140" x2="320" y2="140" stroke="#D9D2C5" stroke-width="0.5"/>
+          <text x="34" y="23" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">100%</text>
+          <text x="34" y="63" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">75%</text>
+          <text x="34" y="103" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">50%</text>
+          <text x="34" y="143" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">25%</text>
+          <!-- F&R+BiBI ~70%, Single limb ~15%, Not fair ~10%, Adverse/NoIER ~5% -->
+          <!-- 2022 -->
+          <rect x="58" y="20" width="44" height="84" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="58" y="104" width="44" height="18" fill="#ECEDF7" rx="0" style="stroke:#6B71BE;stroke-width:0.5;"/>
+          <rect x="58" y="122" width="44" height="12" fill="#E4D2A6" rx="0"/>
+          <rect x="58" y="134" width="44" height="6" fill="#9E5F4A" opacity="0.5" rx="0 0 2 2"/>
+          <!-- 2023 -->
+          <rect x="125" y="20" width="44" height="78" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="125" y="98" width="44" height="24" fill="#ECEDF7" rx="0" style="stroke:#6B71BE;stroke-width:0.5;"/>
+          <rect x="125" y="122" width="44" height="12" fill="#E4D2A6" rx="0"/>
+          <rect x="125" y="134" width="44" height="6" fill="#9E5F4A" opacity="0.5" rx="0 0 2 2"/>
+          <!-- 2024 -->
+          <rect x="191" y="20" width="44" height="84" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="191" y="104" width="44" height="18" fill="#ECEDF7" rx="0" style="stroke:#6B71BE;stroke-width:0.5;"/>
+          <rect x="191" y="122" width="44" height="12" fill="#E4D2A6" rx="0"/>
+          <rect x="191" y="134" width="44" height="6" fill="#9E5F4A" opacity="0.5" rx="0 0 2 2"/>
+          <!-- 2025 -->
+          <rect x="258" y="20" width="44" height="90" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="258" y="110" width="44" height="18" fill="#ECEDF7" rx="0" style="stroke:#6B71BE;stroke-width:0.5;"/>
+          <rect x="258" y="128" width="44" height="8" fill="#E4D2A6" rx="0"/>
+          <rect x="258" y="136" width="44" height="4" fill="#9E5F4A" opacity="0.5" rx="0 0 2 2"/>
+          <text x="80" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2022</text>
+          <text x="147" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2023</text>
+          <text x="213" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2024</text>
+          <text x="280" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2025</text>
+        </svg>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#6B71BE;opacity:0.65;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Fair &amp; reasonable + BiBI</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#ECEDF7;border:1px solid #6B71BE;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Single limb</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#E4D2A6;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Not fair but reasonable</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#9E5F4A;opacity:0.5;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">Adverse / No IER</span></div>
+      </div>
+      <div class="tile-caption">Independent expert conclusions. Positive dual-limb conclusions dominate.</div>
+      <div class="tile-drill-hint">Click a segment to list its deals.</div>
+    </div>
+
+    <!-- Tile 8: Regulatory conditions -->
+    <div class="trend-tile">
+      <div class="tile-title">Regulatory conditions by year</div>
+      <div class="tile-chart">
+        <svg viewBox="0 0 340 160" width="100%" height="160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="40" y1="20" x2="320" y2="20" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="60" x2="320" y2="60" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="100" x2="320" y2="100" stroke="#D9D2C5" stroke-width="0.5"/>
+          <line x1="40" y1="140" x2="320" y2="140" stroke="#D9D2C5" stroke-width="0.5"/>
+          <text x="34" y="23" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">100%</text>
+          <text x="34" y="63" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">75%</text>
+          <text x="34" y="103" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">50%</text>
+          <text x="34" y="143" font-family="IBM Plex Mono" font-size="8" fill="#57534A" text-anchor="end">25%</text>
+          <!-- FIRB+ACCC ~35%, FIRB only ~30%, ACCC only ~15%, None ~20% -->
+          <!-- 2022 -->
+          <rect x="58" y="20" width="44" height="42" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="58" y="62" width="44" height="36" fill="#ECEDF7" rx="0" style="stroke:#6B71BE;stroke-width:0.5;"/>
+          <rect x="58" y="98" width="44" height="18" fill="#E4D2A6" rx="0"/>
+          <rect x="58" y="116" width="44" height="24" fill="#D9D2C5" rx="0 0 2 2"/>
+          <!-- 2023 -->
+          <rect x="125" y="20" width="44" height="48" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="125" y="68" width="44" height="30" fill="#ECEDF7" rx="0" style="stroke:#6B71BE;stroke-width:0.5;"/>
+          <rect x="125" y="98" width="44" height="24" fill="#E4D2A6" rx="0"/>
+          <rect x="125" y="122" width="44" height="18" fill="#D9D2C5" rx="0 0 2 2"/>
+          <!-- 2024 -->
+          <rect x="191" y="20" width="44" height="42" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="191" y="62" width="44" height="36" fill="#ECEDF7" rx="0" style="stroke:#6B71BE;stroke-width:0.5;"/>
+          <rect x="191" y="98" width="44" height="18" fill="#E4D2A6" rx="0"/>
+          <rect x="191" y="116" width="44" height="24" fill="#D9D2C5" rx="0 0 2 2"/>
+          <!-- 2025 -->
+          <rect x="258" y="20" width="44" height="36" fill="#6B71BE" opacity="0.65" rx="2"/>
+          <rect x="258" y="56" width="44" height="42" fill="#ECEDF7" rx="0" style="stroke:#6B71BE;stroke-width:0.5;"/>
+          <rect x="258" y="98" width="44" height="18" fill="#E4D2A6" rx="0"/>
+          <rect x="258" y="116" width="44" height="24" fill="#D9D2C5" rx="0 0 2 2"/>
+          <text x="80" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2022</text>
+          <text x="147" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2023</text>
+          <text x="213" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2024</text>
+          <text x="280" y="158" font-family="IBM Plex Mono" font-size="9" fill="#57534A" text-anchor="middle">2025</text>
+        </svg>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#6B71BE;opacity:0.65;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">FIRB + ACCC</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#ECEDF7;border:1px solid #6B71BE;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">FIRB only</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#E4D2A6;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">ACCC only</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><div style="width:8px;height:8px;border-radius:2px;background:#D9D2C5;"></div><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#57534A;">None / Other</span></div>
+      </div>
+      <div class="tile-caption">Regulatory condition prevalence by announcement year. FIRB conditions are near-universal for foreign bidders.</div>
+      <div class="tile-drill-hint">Click a segment to list its deals.</div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ════════════════════════════════════════════════════════════════
+     TAB 3: MARKET NORMS
+════════════════════════════════════════════════════════════════ -->
+<main class="tab-content" id="tab-norms">
+  <div class="norms-page-header">
+    <div class="page-title">Market Norms</div>
+    <div class="norms-exclusion-note">
+      <span class="n-count">37 schemes &nbsp;·&nbsp; current as of 28 Jun 2026 &nbsp;·&nbsp; </span><span class="n-excluded">4 adjacent comparables excluded</span>
+    </div>
+  </div>
+
+  <div class="norms-layout">
+
+    <!-- LEFT: Test Your Terms -->
+    <div class="tyt-card">
+      <div class="tyt-header">Test Your Terms</div>
+      <div class="tyt-row">
+        <div class="tyt-label">Break fee</div>
+        <div class="tyt-input-wrap">
+          <input class="tyt-input" type="text" value="1.00" id="tyt-bf">
+          <span class="tyt-suffix">%</span>
+        </div>
+      </div>
+      <div class="tyt-row">
+        <div class="tyt-label">Premium (1-day)</div>
+        <div class="tyt-input-wrap">
+          <input class="tyt-input" type="text" value="30" id="tyt-prem">
+          <span class="tyt-suffix">%</span>
+        </div>
+      </div>
+      <div class="tyt-row" style="align-items:flex-start; margin-top:2px;">
+        <div class="tyt-label">
+          Reverse BF
+          <span class="tyt-optional">optional</span>
+        </div>
+        <div class="tyt-input-wrap">
+          <input class="tyt-input" type="text" placeholder="—" id="tyt-rbf">
+          <span class="tyt-suffix">%</span>
+        </div>
+      </div>
+      <button class="calc-btn" onclick="calcTerms()">Calculate</button>
+      <div id="tyt-result" style="margin-top:12px; display:none; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#57534A; line-height:1.5; background:var(--canvas); border-radius:4px; padding:10px 12px; border:1px solid var(--hairline);">
+        <div id="tyt-result-bf"></div>
+        <div id="tyt-result-prem"></div>
+        <div id="tyt-result-rbf"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Norms Card -->
+    <div class="norms-card">
+      <div class="norms-card-header">
+        <div class="norms-kicker">SCHEME BENCHMARK</div>
+        <div class="norms-title">ASX schemes &nbsp;·&nbsp; ≥ A$1bn &nbsp;·&nbsp; All sectors</div>
+        <div class="norms-subline">N = 37 headline schemes</div>
+      </div>
+
+      <div class="norms-body">
+        <div class="norm-section-title">Continuous metrics</div>
+
+        <!-- Column headers -->
+        <div class="norm-col-headers">
+          <span class="norm-col-hdr">Metric</span>
+          <span class="norm-col-hdr">P25</span>
+          <span class="norm-col-hdr">Median</span>
+          <span class="norm-col-hdr">P75</span>
+          <span class="norm-col-hdr">Distribution</span>
+        </div>
+
+        <!-- Break fee row -->
+        <div class="norm-row">
+          <div>
+            <div class="norm-label">Break fee, % of equity value</div>
+            <span class="norm-n">n = 36 · most at 1% GN7 cap</span>
+          </div>
+          <div class="norm-pct p25">1.00%</div>
+          <div class="norm-pct">1.00%</div>
+          <div class="norm-pct p75">1.00%</div>
+          <div class="norm-bar-wrap">
+            <div class="dist-bar">
+              <!-- P25-P75 range: essentially all at 1%, so tight band -->
+              <div class="dist-range" style="left:70%; width:20%;"></div>
+              <div class="dist-median" style="left:80%;"></div>
+              <div class="dist-user" id="dist-user-bf" style="left:80%;"></div>
+            </div>
+            <div class="dist-annotation">GN7 ceiling ← 1.0%</div>
+          </div>
+        </div>
+
+        <!-- Premium row -->
+        <div class="norm-row">
+          <div>
+            <div class="norm-label">Premium to undisturbed (1-day)</div>
+            <span class="norm-n">n = 35 · control premium</span>
+          </div>
+          <div class="norm-pct p25">24%</div>
+          <div class="norm-pct">31%</div>
+          <div class="norm-pct p75">42%</div>
+          <div class="norm-bar-wrap">
+            <div class="dist-bar">
+              <div class="dist-range" style="left:20%; width:37%;"></div>
+              <div class="dist-median" style="left:30%;"></div>
+              <div class="dist-user" id="dist-user-prem" style="left:28%;"></div>
+            </div>
+            <div class="dist-annotation">Range: ~8% – 70%</div>
+          </div>
+        </div>
+
+        <!-- Reverse BF row -->
+        <div class="norm-row">
+          <div>
+            <div class="norm-label">Reverse break fee, % of equity value</div>
+            <span class="norm-n">n = 28 disclosed</span>
+          </div>
+          <div class="norm-pct p25">1.50%</div>
+          <div class="norm-pct">2.00%</div>
+          <div class="norm-pct p75">2.50%</div>
+          <div class="norm-bar-wrap">
+            <div class="dist-bar">
+              <div class="dist-range" style="left:30%; width:35%;"></div>
+              <div class="dist-median" style="left:47%;"></div>
+              <div class="dist-user" id="dist-user-rbf" style="left:47%;"></div>
+            </div>
+            <div class="dist-annotation">Range: ~0.7% – 5.0%</div>
+          </div>
+        </div>
+
+        <!-- STAT GRID -->
+        <div class="norm-section-title" style="margin-top:16px;">Prevalence metrics</div>
+        <div class="stat-grid">
+          <div class="stat-cell">
+            <div class="stat-cell-label">Break fee</div>
+            <div class="stat-cell-val">97%</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-cell-label">Reverse BF</div>
+            <div class="stat-cell-val">72%</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-cell-label">Ticking fee</div>
+            <div class="stat-cell-val" style="color:var(--rust);">22%</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-cell-label">Match rights</div>
+            <div class="stat-cell-val">89%</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-cell-label">No-talk</div>
+            <div class="stat-cell-val">81%</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-cell-label">MAC clause</div>
+            <div class="stat-cell-val">73%</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-cell-label">FIRB condition</div>
+            <div class="stat-cell-val">65%</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-cell-label">Avg. timeline</div>
+            <div class="stat-cell-val">154<span style="font-size:11px; color:var(--ink-soft);">d</span></div>
+          </div>
+        </div>
+
+        <!-- MIX BARS -->
+        <div class="norm-section-title" style="margin-top:16px;">Consideration &amp; Status</div>
+
+        <div class="mix-section">
+          <div class="mix-title">Consideration type</div>
+          <div class="mix-bar-row">
+            <div class="mix-seg" style="width:78%; background:#6B71BE; opacity:0.7;">Cash 78%</div>
+            <div class="mix-seg" style="width:16%; background:#E4D2A6; color:#2A2824;">Mixed 16%</div>
+            <div class="mix-seg" style="width:6%; background:#D9D2C5; color:#57534A; font-size:8px;">6%</div>
+          </div>
+          <div class="mix-legend">
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#6B71BE; opacity:0.7;"></div>Cash</div>
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#E4D2A6;"></div>Mixed</div>
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#D9D2C5;"></div>Scrip</div>
+          </div>
+        </div>
+
+        <div class="mix-section">
+          <div class="mix-title">Status</div>
+          <div class="mix-bar-row">
+            <div class="mix-seg" style="width:70%; background:#6B71BE; opacity:0.65;">Completed 70%</div>
+            <div class="mix-seg" style="width:11%; background:#9E5F4A; opacity:0.55; font-size:8px;">11%</div>
+            <div class="mix-seg" style="width:5%; background:#9E5F4A; opacity:0.35; font-size:8px;">5%</div>
+            <div class="mix-seg" style="width:5%; background:#D9D2C5; color:#57534A; font-size:8px;">5%</div>
+            <div class="mix-seg" style="width:9%; background:#ECEDF7; border:1px solid #D9D2C5; color:#57534A; font-size:8px;">9%</div>
+          </div>
+          <div class="mix-legend">
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#6B71BE; opacity:0.65;"></div>Completed</div>
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#9E5F4A; opacity:0.55;"></div>Lapsed</div>
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#9E5F4A; opacity:0.35;"></div>Terminated</div>
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#D9D2C5;"></div>Withdrawn</div>
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#ECEDF7; border:1px solid #D9D2C5;"></div>Pending</div>
+          </div>
+        </div>
+
+        <div class="mix-section">
+          <div class="mix-title">IER conclusion</div>
+          <div class="mix-bar-row">
+            <div class="mix-seg" style="width:68%; background:#6B71BE; opacity:0.65; font-size:10px;">F&amp;R + BiBI 68%</div>
+            <div class="mix-seg" style="width:19%; background:#ECEDF7; border:1px solid #D9D2C5; color:#57534A; font-size:8px;">Qualified 19%</div>
+            <div class="mix-seg" style="width:8%; background:#E4D2A6; color:#57534A; font-size:8px;">8%</div>
+            <div class="mix-seg" style="width:5%; background:#9E5F4A; opacity:0.55; font-size:8px;">5%</div>
+          </div>
+          <div class="mix-legend">
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#6B71BE; opacity:0.65;"></div>Fair &amp; reasonable + in best interests</div>
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#ECEDF7; border:1px solid #D9D2C5;"></div>Qualified</div>
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#E4D2A6;"></div>No IER</div>
+            <div class="mix-legend-item"><div class="mix-swatch" style="background:#9E5F4A; opacity:0.55;"></div>Adverse</div>
+          </div>
+        </div>
+
+        <!-- Methodology footnote -->
+        <div class="methodology-note">
+          Benchmark excludes 4 cohort-tagged adjacent comparables (trust scheme, stapled security, reverse listing, no-binding-SID). Data as of 28 Jun 2026. Source: Gilbert + Tobin / Corrs Appendix A verified against ASX announcements and operative deeds.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notable Callouts -->
+  <div class="callouts-section">
+    <div class="callouts-title">Notable callouts</div>
+    <div class="callouts-row">
+      <span class="callout-chip rust-chip">
+        <span class="callout-dot"></span>
+        3 deals with ticking fee in 2024–25
+      </span>
+      <span class="callout-chip peri-chip">
+        <span class="callout-dot"></span>
+        Highest premium: 55% (Newcrest/Lynas)
+      </span>
+      <span class="callout-chip peri-chip">
+        <span class="callout-dot"></span>
+        Largest deal: $26.2bn (Newcrest/Newmont)
+      </span>
+      <span class="callout-chip rust-chip">
+        <span class="callout-dot"></span>
+        Origin lapse: only A$1bn+ lapse in 2023
+      </span>
+    </div>
+  </div>
+</main>
+
+<!-- ─── TAB SWITCHING LOGIC ───────────────────────────────────── -->
+<script>
+  function switchTab(tabId, btn) {
+    // Deactivate all tabs and buttons
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    // Activate selected
+    document.getElementById('tab-' + tabId).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function calcTerms() {
+    const bf = parseFloat(document.getElementById('tyt-bf').value);
+    const prem = parseFloat(document.getElementById('tyt-prem').value);
+    const rbf = parseFloat(document.getElementById('tyt-rbf').value) || null;
+
+    const result = document.getElementById('tyt-result');
+    const resBF = document.getElementById('tyt-result-bf');
+    const resPrem = document.getElementById('tyt-result-prem');
+    const resRBF = document.getElementById('tyt-result-rbf');
+
+    if (isNaN(bf) && isNaN(prem)) {
+      result.style.display = 'none';
+      return;
+    }
+
+    result.style.display = 'block';
+
+    // Break fee position
+    if (!isNaN(bf)) {
+      let bfLabel = '';
+      if (bf < 0.5) bfLabel = 'below P25 (below market)';
+      else if (bf <= 1.0) bfLabel = 'in range — near 1% GN7 ceiling';
+      else bfLabel = 'above GN7 1% cap — requires justification';
+      resBF.textContent = `BF ${bf.toFixed(2)}%: ${bfLabel}`;
+    } else {
+      resBF.textContent = '';
+    }
+
+    // Premium position
+    if (!isNaN(prem)) {
+      let premLabel = '';
+      if (prem < 24) premLabel = 'below P25 — below market';
+      else if (prem <= 31) premLabel = 'P25–Median range (24%–31%)';
+      else if (prem <= 42) premLabel = 'Median–P75 range (31%–42%)';
+      else premLabel = 'above P75 — above-market premium';
+      resPrem.textContent = `Premium ${prem.toFixed(0)}%: ${premLabel}`;
+    } else {
+      resPrem.textContent = '';
+    }
+
+    // Reverse BF
+    if (rbf !== null && !isNaN(rbf)) {
+      let rbfLabel = '';
+      if (rbf < 1.5) rbfLabel = 'below P25 — below market';
+      else if (rbf <= 2.0) rbfLabel = 'P25–Median range (1.5%–2.0%)';
+      else if (rbf <= 2.5) rbfLabel = 'Median–P75 range (2.0%–2.5%)';
+      else rbfLabel = 'above P75 — generous reverse break fee';
+      resRBF.textContent = `Reverse BF ${rbf.toFixed(2)}%: ${rbfLabel}`;
+    } else {
+      resRBF.textContent = '';
+    }
+  }
+</script>
+
+</body>
+</html>
